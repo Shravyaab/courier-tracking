@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Courier Tracking System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin: 20px 0; }
+        input, button { padding: 10px; margin: 5px; }
+        .result { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Courier Tracking System</h1>
+        
+        <div class="form-group">
+            <h3>Track Package</h3>
+            <input type="text" id="trackingId" placeholder="Enter Tracking ID (e.g., TRK12345678)">
+            <button onclick="trackPackage()">Track</button>
+        </div>
+        
+        <div id="result" class="result" style="display:none;"></div>
+        
+        <div class="form-group">
+            <h3>Login</h3>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+        
+        <div id="loginResult" style="margin: 10px 0;"></div>
+        
+        <p><strong>Test Accounts:</strong> admin/admin123, customer1/customer123</p>
+        <p><strong>Test Tracking:</strong> TRK12345678</p>
+    </div>
+
+    <script>
+        async function trackPackage() {
+            const trackingId = document.getElementById('trackingId').value;
+            if (!trackingId) return;
+            
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/tracking/${trackingId}/`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('result').innerHTML = `
+                        <h4>Tracking Details</h4>
+                        <p><strong>Tracking ID:</strong> ${data.tracking_number}</p>
+                        <p><strong>Status:</strong> ${data.status}</p>
+                        <p><strong>Receiver:</strong> ${data.receiver_name}</p>
+                        <p><strong>From:</strong> ${data.pickup_address}</p>
+                        <p><strong>To:</strong> ${data.delivery_address}</p>
+                        <p><strong>Weight:</strong> ${data.weight} kg</p>
+                        <h5>Tracking History:</h5>
+                        ${data.tracking_history.map(h => `
+                            <div style="margin: 10px 0; padding: 10px; background: #f5f5f5;">
+                                <strong>${h.status}</strong> - ${h.location}<br>
+                                <small>${h.timestamp}</small>
+                            </div>
+                        `).join('')}
+                    `;
+                    document.getElementById('result').style.display = 'block';
+                } else {
+                    document.getElementById('result').innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                    document.getElementById('result').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                document.getElementById('result').style.display = 'block';
+            }
+        }
+        
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/auth/login/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('loginResult').innerHTML = `
+                        <p style="color: green;">Login successful! Welcome ${data.user.first_name} (${data.user.role})</p>
+                    `;
+                } else {
+                    document.getElementById('loginResult').innerHTML = `
+                        <p style="color: red;">Login failed: ${data.error}</p>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = `
+                    <p style="color: red;">Error: ${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
